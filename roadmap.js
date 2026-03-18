@@ -88,11 +88,15 @@ function renderRoadmap() {
     // Clear and hide views initially
     cardView.style.display = 'none';
     timelineView.style.display = 'none';
+    
+    const controls = document.querySelector('.timeline-controls');
+    if (controls) controls.style.display = 'none';
 
     switch (currentView) {
         case 'timeline':
             timelineView.style.display = 'block';
             timelineTitle.innerHTML = '<span>📊</span> Project Timeline';
+            if (controls) controls.style.display = 'flex';
             renderTimelineView();
             break;
         case 'horizontal':
@@ -124,39 +128,47 @@ function renderCardView() {
         return;
     }
 
-    container.innerHTML = roadmapData.projects.map(project => `
-        <div class="project-section" style="--project-color: ${project.color}">
+    container.innerHTML = roadmapData.projects.map(project => {
+        const isCollapsed = collapsedProjects.has(project.id);
+        
+        return `
+        <div class="project-section ${isCollapsed ? 'collapsed' : ''}" style="--project-color: ${project.color}">
             <div class="project-header">
-                <h2>${escapeHtml(project.name)}</h2>
+                <div style="display: flex; align-items: center; gap: 12px; cursor: pointer;" onclick="toggleProjectCollapse('${project.id}')">
+                    <span class="collapse-toggle">${isCollapsed ? '▶' : '▼'}</span>
+                    <h2 style="margin-bottom: 0;">${escapeHtml(project.name)}</h2>
+                </div>
                 <div class="project-actions">
                     <button class="btn-sm btn-primary" onclick="openAddPhaseModal('${project.id}')">➕ Add Phase</button>
                     <button class="btn-sm" onclick="editProject('${project.id}')">Edit Project</button>
                     <button class="btn-sm btn-danger-text" onclick="deleteProject('${project.id}')">Delete</button>
                 </div>
             </div>
-            <div class="phases-grid">
-                ${project.phases.map((phase, idx) => `
-                    <div class="phase-card">
-                        <div class="phase-card-header">
-                            <div>
-                                <span class="phase-idx">${idx + 1}</span>
-                                <h3>${escapeHtml(phase.name)}</h3>
-                                <div class="phase-date">${formatDate(phase.startDate)} - ${formatDate(phase.endDate)}</div>
+            ${!isCollapsed ? `
+                <div class="phases-grid">
+                    ${project.phases.map((phase, idx) => `
+                        <div class="phase-card">
+                            <div class="phase-card-header">
+                                <div>
+                                    <span class="phase-idx">${idx + 1}</span>
+                                    <h3>${escapeHtml(phase.name)}</h3>
+                                    <div class="phase-date">${formatDate(phase.startDate)} - ${formatDate(phase.endDate)}</div>
+                                </div>
+                                <div class="phase-actions">
+                                    <button class="icon-btn" title="Edit Phase" onclick="editPhase('${project.id}', ${phase.id})">✎</button>
+                                    <button class="icon-btn delete" title="Delete Phase" onclick="deletePhase('${project.id}', ${phase.id})">×</button>
+                                </div>
                             </div>
-                            <div class="phase-actions">
-                                <button class="icon-btn" title="Edit Phase" onclick="editPhase('${project.id}', ${phase.id})">✎</button>
-                                <button class="icon-btn delete" title="Delete Phase" onclick="deletePhase('${project.id}', ${phase.id})">×</button>
+                            <div class="milestones-list">
+                                ${phase.milestones.map(m => renderMilestoneItem(project.id, phase.id, m)).join('')}
+                                <button class="add-m-btn" onclick="openAddMilestoneModal('${project.id}', ${phase.id})">+ Add Milestone</button>
                             </div>
                         </div>
-                        <div class="milestones-list">
-                            ${phase.milestones.map(m => renderMilestoneItem(project.id, phase.id, m)).join('')}
-                            <button class="add-m-btn" onclick="openAddMilestoneModal('${project.id}', ${phase.id})">+ Add Milestone</button>
-                        </div>
-                    </div>
-                `).join('')}
-            </div>
+                    `).join('')}
+                </div>
+            ` : ''}
         </div>
-    `).join('');
+    `;}).join('');
 }
 
 function renderMilestoneItem(projectId, phaseId, m) {
@@ -297,7 +309,7 @@ function toggleProjectCollapse(projectId) {
     } else {
         collapsedProjects.add(projectId);
     }
-    renderGanttView();
+    renderRoadmap(); // Master dispatch ensures current view refreshes
 }
 
 // ============================================
@@ -306,10 +318,34 @@ function toggleProjectCollapse(projectId) {
 
 function renderTimelineView() {
     const container = document.getElementById('timeline');
+    const projectFilterSelect = document.getElementById('projectFilter');
+    const phaseFilterSelect = document.getElementById('phaseFilter');
+    
+    // Populate filters if they exist
+    if (projectFilterSelect && projectFilterSelect.options.length <= 1) {
+        const currentFilter = projectFilterSelect.value;
+        projectFilterSelect.innerHTML = '<option value="all">All Projects</option>' + 
+            roadmapData.projects.map(p => `<option value="${p.id}" ${currentFilter === p.id ? 'selected' : ''}>${p.name}</option>`).join('');
+        
+        // Ensure phase filter is also initialized
+        updatePhaseFilterOptions();
+    }
+
+    const projectFilter = projectFilterSelect ? projectFilterSelect.value : 'all';
+    const phaseFilter = phaseFilterSelect ? phaseFilterSelect.value : 'all';
+
     let allMilestones = [];
-    roadmapData.projects.forEach(p => p.phases.forEach(ph => ph.milestones.forEach(m => {
-        allMilestones.push({ ...m, projectName: p.name, projectColor: p.color });
-    })));
+    roadmapData.projects.forEach(p => {
+        if (projectFilter !== 'all' && p.id !== projectFilter) return;
+
+        p.phases.forEach(ph => {
+            if (phaseFilter !== 'all' && String(ph.id) !== phaseFilter) return;
+
+            ph.milestones.forEach(m => {
+                allMilestones.push({ ...m, projectName: p.name, projectColor: p.color });
+            });
+        });
+    });
 
     // Grouping by date
     const grouped = {};
@@ -319,6 +355,17 @@ function renderTimelineView() {
     });
 
     const sortedDates = Object.keys(grouped).sort((a, b) => parseLocalDate(a) - parseLocalDate(b));
+
+    if (allMilestones.length === 0) {
+        container.innerHTML = `
+            <div style="text-align: center; padding: 60px 20px; color: var(--text-dim);">
+                <span style="font-size: 3rem; display: block; margin-bottom: 16px;">🔍</span>
+                <p style="font-size: 1.1rem;">No milestones found matching your criteria</p>
+                <button class="btn btn-sm" style="margin-top: 12px;" onclick="resetTimelineFilters()">Clear Filters</button>
+            </div>
+        `;
+        return;
+    }
 
     container.innerHTML = `
         <div class="timeline-v-scroll">
@@ -355,6 +402,48 @@ function renderTimelineView() {
             `;}).join('')}
         </div>
     `;
+}
+
+function updateTimelineFilters() {
+    renderTimelineView();
+}
+
+function updatePhaseFilterOptions() {
+    const projectFilter = document.getElementById('projectFilter');
+    const phaseFilter = document.getElementById('phaseFilter');
+    if (!projectFilter || !phaseFilter) return;
+
+    const selectedProjectId = projectFilter.value;
+    if (selectedProjectId === 'all') {
+        const allPhases = [];
+        roadmapData.projects.forEach(p => {
+            p.phases.forEach(ph => {
+                allPhases.push({ id: ph.id, name: ph.name, projectName: p.name });
+            });
+        });
+
+        phaseFilter.innerHTML = '<option value="all">All Phases</option>' + 
+            allPhases.map(ph => `<option value="${ph.id}">${ph.name} (${ph.projectName})</option>`).join('');
+        phaseFilter.value = 'all';
+        return;
+    }
+
+    const project = roadmapData.projects.find(p => p.id === selectedProjectId);
+    if (project) {
+        phaseFilter.innerHTML = '<option value="all">All Phases</option>' + 
+            project.phases.map(ph => `<option value="${ph.id}">${ph.name}</option>`).join('');
+    } else {
+        phaseFilter.innerHTML = '<option value="all">All Phases</option>';
+    }
+    phaseFilter.value = 'all';
+}
+
+function resetTimelineFilters() {
+    const projectFilter = document.getElementById('projectFilter');
+    const phaseFilter = document.getElementById('phaseFilter');
+    if (projectFilter) projectFilter.value = 'all';
+    updatePhaseFilterOptions();
+    renderTimelineView();
 }
 
 function renderHorizontalTimeline() {

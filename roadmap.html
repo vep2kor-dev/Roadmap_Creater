@@ -136,6 +136,11 @@
         .project-section {
             margin-bottom: 60px;
             animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+            transition: margin-bottom 0.3s ease;
+        }
+
+        .project-section.collapsed {
+            margin-bottom: 24px;
         }
 
         .project-header {
@@ -151,6 +156,27 @@
             font-size: 1.5rem;
             font-weight: 700;
             color: var(--text-primary);
+        }
+
+        .collapse-toggle {
+            cursor: pointer;
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.03);
+            border-radius: 8px;
+            transition: 0.3s;
+            color: var(--text-secondary);
+            font-size: 0.75rem;
+            user-select: none;
+        }
+
+        .collapse-toggle:hover {
+            background: var(--project-color);
+            color: white;
+            transform: scale(1.1);
         }
 
         .phases-grid {
@@ -874,6 +900,48 @@
             font-weight: 600;
             display: block;
         }
+        .timeline-controls {
+            display: flex;
+            gap: 24px;
+            align-items: center;
+        }
+
+        .filter-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .filter-group label {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            white-space: nowrap;
+            color: var(--text-dim);
+        }
+
+        .timeline-controls select, .timeline-controls input {
+            padding: 8px 12px;
+            border-radius: 8px;
+            border: 1px solid var(--border-subtle);
+            font-size: 0.875rem;
+            color: var(--text-primary);
+            background: white;
+            transition: 0.2s;
+            min-width: 160px;
+        }
+
+        .timeline-controls select:focus, .timeline-controls input:focus {
+            border-color: var(--project-color, #0ea5e9);
+            box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.1);
+            outline: none;
+        }
+
+        .timeline-controls label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
     </style>
 </head>
 
@@ -897,8 +965,22 @@
         </header>
 
         <div id="timelineView" style="display: none;">
-            <header style="margin-bottom: 24px; border-bottom: 1px solid var(--border-light); padding-bottom: 16px;">
-                <h2 id="timelineTitle">Portfolio Timeline</h2>
+            <header style="margin-bottom: 24px; border-bottom: 1px solid var(--border-light); padding-bottom: 16px; display: flex; justify-content: space-between; align-items: center;">
+                <h2 id="timelineTitle" style="margin: 0;">Portfolio Timeline</h2>
+                <div class="timeline-controls">
+                    <div class="filter-group">
+                        <label>📂 Project</label>
+                        <select id="projectFilter" onchange="updatePhaseFilterOptions(); updateTimelineFilters()">
+                            <option value="all">All Projects</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>📑 Phase</label>
+                        <select id="phaseFilter" onchange="updateTimelineFilters()">
+                            <option value="all">All Phases</option>
+                        </select>
+                    </div>
+                </div>
             </header>
             <div id="timeline"></div>
         </div>
