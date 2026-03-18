@@ -1,0 +1,1052 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Strategic Roadmap Portfolio</title>
+    <style>
+        :root {
+            --bg-main: #f1f5f9;
+            /* Slate 100 */
+            --glass-bg: rgba(255, 255, 255, 0.8);
+            --header-grad: linear-gradient(135deg, #0ea5e9, #6366f1);
+            --border-subtle: #e2e8f0;
+            /* Slate 200 */
+            --text-primary: #0f172a;
+            /* Slate 900 */
+            --text-secondary: #475569;
+            /* Slate 600 */
+            --text-muted: #94a3b8;
+            /* Slate 400 */
+            --card-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, system-ui, sans-serif;
+            background-color: var(--bg-main);
+            background-image: radial-gradient(at 0% 0%, rgba(226, 232, 240, 0.4) 0, transparent 50%),
+                radial-gradient(at 50% 0%, rgba(203, 213, 225, 0.4) 0, transparent 50%);
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding: 40px 20px;
+            line-height: 1.5;
+        }
+
+        .container {
+            max-width: 1300px;
+            margin: 0 auto;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 48px;
+        }
+
+        header h1 {
+            font-size: 2.25rem;
+            background: var(--header-grad);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: 800;
+            letter-spacing: -0.025em;
+        }
+
+        /* Controls */
+        .controls {
+            display: flex;
+            gap: 12px;
+            background: var(--glass-bg);
+            padding: 6px;
+            border-radius: 12px;
+            border: 1px solid var(--border-subtle);
+            backdrop-filter: blur(8px);
+            box-shadow: var(--card-shadow);
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: 1px solid transparent;
+            font-size: 0.875rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-secondary);
+            background: white;
+        }
+
+        .btn:hover {
+            background: #f8fafc;
+            border-color: var(--border-subtle);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        }
+
+        .btn-primary {
+            background: #0f172a;
+            color: white;
+            border: none;
+        }
+
+        .btn-primary:hover {
+            background: #1e293b;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn-danger-outline {
+            background-color: transparent !important;
+            border: 1px solid #fee2e2 !important;
+            color: #ef4444 !important;
+        }
+
+        .btn-danger-outline:hover {
+            background-color: #fef2f2 !important;
+            border-color: #fecaca !important;
+            color: #dc2626 !important;
+        }
+
+        .btn-danger-text {
+            background: transparent;
+            color: #ef4444;
+            border: none;
+            font-weight: 700;
+            padding: 8px 12px;
+        }
+
+        .btn-danger-text:hover {
+            color: #dc2626;
+            background: #fef2f2;
+            border-radius: 8px;
+        }
+
+        /* Project Section Styling */
+        .project-section {
+            margin-bottom: 60px;
+            animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .project-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 2px solid var(--project-color, #0ea5e9);
+        }
+
+        .project-header h2 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .phases-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+            gap: 28px;
+        }
+
+        /* SaaS Cards */
+        .phase-card {
+            background: white;
+            border: 1px solid var(--border-subtle);
+            border-radius: 16px;
+            padding: 28px;
+            position: relative;
+            overflow: hidden;
+            transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: var(--card-shadow);
+        }
+
+        .phase-card:hover {
+            border-color: var(--project-color);
+            transform: translateY(-4px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+
+        .phase-idx {
+            position: absolute;
+            top: -10px;
+            right: -10px;
+            font-size: 5rem;
+            font-weight: 950;
+            color: var(--text-primary);
+            opacity: 0.03;
+            pointer-events: none;
+        }
+
+        .phase-card-header h3 {
+            font-size: 1.25rem;
+            margin-bottom: 4px;
+            color: var(--text-primary);
+        }
+
+        .phase-date {
+            font-size: 0.813rem;
+            color: var(--project-color);
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 20px;
+        }
+
+        .phase-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+
+        .phase-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .icon-btn {
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            border: 1px solid var(--border-subtle);
+            background: #f8fafc;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: 0.2s;
+            font-size: 0.9rem;
+        }
+
+        .icon-btn:hover {
+            background: white;
+            border-color: var(--project-color);
+            color: var(--project-color);
+            transform: scale(1.05);
+        }
+
+        .icon-btn.delete:hover {
+            background: #fef2f2;
+            border-color: #fee2e2;
+            color: #ef4444;
+        }
+
+        /* Milestones List */
+        .milestones-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .milestone-item {
+            background: #f8fafc;
+            padding: 14px 18px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            cursor: pointer;
+            border: 1px solid var(--border-subtle);
+            transition: 0.2s;
+        }
+
+        .milestone-item:hover {
+            border-color: var(--project-color);
+            background: white;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        }
+
+        .m-status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .m-content {
+            flex: 1;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .m-title {
+            font-size: 0.938rem;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        .m-date {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            white-space: nowrap;
+        }
+
+        .add-m-btn {
+            background: white;
+            border: 1px dashed var(--text-muted);
+            color: var(--text-secondary);
+            padding: 12px;
+            border-radius: 12px;
+            cursor: pointer;
+            margin-top: 12px;
+            font-weight: 600;
+            font-size: 0.813rem;
+            transition: 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .add-m-btn:hover {
+            border-color: var(--project-color);
+            color: var(--project-color);
+            background: #f8fafc;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+        }
+
+        /* Status Dot & Badge colors */
+        .status-completed,
+        .badge-completed {
+            background: #10b981;
+        }
+
+        .status-inprogress,
+        .badge-inprogress {
+            background: #0ea5e9;
+        }
+
+        .status-planned,
+        .badge-planned {
+            background: #f59e0b;
+        }
+
+        .badge-completed,
+        .badge-inprogress,
+        .badge-planned {
+            color: white;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+        }
+
+        /* Gantt Portfolio Styles */
+        .gantt-container {
+            background: white;
+            border-radius: 16px;
+            border: 1px solid var(--border-subtle);
+            box-shadow: var(--card-shadow);
+            position: relative;
+            margin-top: 20px;
+        }
+
+        .gantt-header {
+            display: flex;
+            background: #f8fafc;
+            border-bottom: 1px solid var(--border-subtle);
+            height: 56px;
+            align-items: stretch;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            border-top-left-radius: 16px;
+            border-top-right-radius: 16px;
+        }
+
+        .gantt-label-header {
+            width: 220px;
+            padding: 18px;
+            font-weight: 700;
+            border-right: 1px solid var(--border-subtle);
+            font-size: 0.813rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .gantt-months {
+            flex: 1;
+            position: relative;
+            height: 100%;
+        }
+
+        .gantt-month {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            border-right: 1px solid var(--border-subtle);
+            text-align: center;
+        }
+
+        .gantt-body {
+            position: relative;
+            background: white;
+        }
+
+        .gantt-row {
+            display: flex;
+            border-bottom: 1px solid var(--border-subtle);
+            transition: background 0.2s;
+            min-height: 56px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .gantt-row:hover {
+            background: #f8fafc;
+            z-index: 30;
+        }
+
+        .gantt-project-row {
+            background: #f1f5f9;
+            font-weight: 700;
+            border-left: 4px solid var(--project-color);
+            min-height: 48px;
+            color: var(--text-primary);
+        }
+
+        .gantt-label {
+            width: 220px;
+            padding: 12px 18px;
+            border-right: 1px solid var(--border-subtle);
+            font-size: 0.875rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .gantt-label strong {
+            color: var(--text-primary);
+        }
+
+        .gantt-label small {
+            display: block;
+            color: var(--text-muted);
+            font-size: 0.75rem;
+            margin-top: 2px;
+        }
+
+        .gantt-toggle-arrow {
+            display: inline-block;
+            width: 14px;
+            margin-right: 6px;
+            color: var(--text-secondary);
+            font-size: 0.7rem;
+            transition: transform 0.2s;
+        }
+
+        .gantt-track {
+            flex: 1;
+            position: relative;
+            min-height: 56px;
+            background-image: linear-gradient(to right, var(--border-subtle) 1px, transparent 1px);
+            background-size: 100% 100%;
+            /* Dynamically sized by month in JS */
+        }
+
+        .gantt-phase-bar {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            height: 28px;
+            background: var(--project-color);
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            padding: 0 12px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: white;
+            transition: filter 0.2s, transform 0.2s;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            white-space: nowrap;
+        }
+
+        .gantt-phase-bar:hover {
+            filter: brightness(1.1);
+            transform: translateY(-50%) scaleY(1.05);
+        }
+
+        .gantt-milestone-marker {
+            position: absolute;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            border: 3px solid white;
+            cursor: pointer;
+            z-index: 5;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .gantt-today-pin {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: #ff4757;
+            z-index: 20;
+            pointer-events: none;
+        }
+
+        .gantt-today-pin span {
+            position: absolute;
+            top: -24px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #ff4757;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.625rem;
+            font-weight: 950;
+            white-space: nowrap;
+        }
+
+
+
+        /* Modal Redesign */
+        .modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.4);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            backdrop-filter: blur(4px);
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            width: 480px;
+            padding: 36px;
+            border-radius: 24px;
+            border: 1px solid var(--border-subtle);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            animation: modalPop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        @keyframes modalPop {
+            from {
+                opacity: 0;
+                transform: scale(0.95);
+            }
+
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .modal h2 {
+            margin-bottom: 28px;
+            font-weight: 800;
+            color: var(--text-primary);
+        }
+
+        .form-group {
+            margin-bottom: 24px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.813rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            background: #f8fafc;
+            border: 1px solid var(--border-subtle);
+            padding: 14px;
+            border-radius: 12px;
+            color: var(--text-primary);
+            outline: none;
+            font-family: inherit;
+            transition: 0.2s;
+        }
+
+        .form-group input:focus {
+            border-color: var(--project-color);
+            background: white;
+            box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.1);
+        }
+
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 14px;
+            margin-top: 36px;
+        }
+
+        .btn-sm {
+            padding: 8px 16px;
+            font-size: 0.75rem;
+            background: white;
+            border: 1px solid var(--border-subtle);
+            border-radius: 8px;
+            color: var(--text-primary);
+            /* Darker Slate 900 */
+            cursor: pointer;
+            font-weight: 600;
+            transition: 0.2s;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+        }
+
+        .btn-sm:hover {
+            border-color: var(--text-muted);
+            background: #f8fafc;
+            color: var(--text-primary);
+        }
+
+        .btn-sm.btn-primary {
+            background: var(--project-color, #0ea5e9);
+            color: white;
+            border: none;
+        }
+
+        .btn-sm.btn-primary:hover {
+            filter: brightness(1.1);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn-outline {
+            border: 1px solid var(--border-subtle);
+            background: transparent;
+        }
+
+        .btn-danger-text {
+            color: #ef4444;
+            font-weight: 600;
+        }
+
+        .btn-danger-text:hover {
+            color: #dc2626;
+            background: #fef2f2;
+        }
+
+        .gantt-milestone-marker:hover {
+            transform: translate(-50%, -50%) scale(1.3);
+        }
+
+
+
+        .gantt-tooltip {
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #0f172a;
+            color: white;
+            padding: 12px 16px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            pointer-events: none;
+            opacity: 0;
+            transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            visibility: hidden;
+            margin-top: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
+            width: max-content;
+            max-width: 260px;
+            line-height: 1.5;
+            z-index: 50;
+        }
+
+        .tooltip-desc {
+            display: block;
+            color: #94a3b8;
+            font-size: 0.7rem;
+            margin: 6px 0;
+        }
+
+        .gantt-milestone-marker:hover .gantt-tooltip {
+            opacity: 1;
+            visibility: visible;
+            transform: translateX(-50%) translateY(5px);
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* General Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 100px 0;
+            color: var(--text-muted);
+        }
+
+        .empty-icon {
+            font-size: 3rem;
+            margin-bottom: 20px;
+            opacity: 0.3;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-main);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border-subtle);
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--text-muted);
+        }
+
+        /* The Connecting Bar - Background Layer */
+        .timeline-v-scroll::before {
+            content: '';
+            position: absolute;
+            left: 31px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: var(--border-subtle);
+            border-radius: 1px;
+            z-index: 0;
+            /* Foundation layer */
+        }
+
+        .timeline-v-item {
+            display: flex;
+            width: 100%;
+            margin: 0;
+            padding: 32px 0 32px 90px;
+            /* Locked spacing for the spine */
+            align-items: center;
+            position: relative;
+            animation: fadeIn 0.5s ease-out forwards;
+            z-index: 1;
+            background: transparent !important;
+        }
+
+        /* Dimmer, but clearly visible horizontal separator that doesn't overlap the spine */
+        .timeline-v-item:not(:last-child)::before {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 90px;
+            /* Start line after the bubble area */
+            right: 0;
+            height: 1.5px;
+            /* Slightly thicker for visibility */
+            background: #e2e8f0;
+            /* Explicitly visible light gray */
+        }
+
+        /* Spacing for first item */
+        .timeline-v-item:first-child {
+            padding-top: 16px;
+        }
+
+        /* The Bubble (Node) - Top Layer */
+        .timeline-v-item::after {
+            content: '';
+            position: absolute;
+            left: 24px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 16px;
+            height: 16px;
+            background: white !important;
+            border: 3px solid var(--p-color);
+            border-radius: 50%;
+            z-index: 10;
+            /* Highest layer in the row */
+            box-shadow: 0 0 0 4px white, var(--card-shadow);
+            transition: 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .timeline-v-item:hover::after {
+            transform: translateY(-50%) scale(1.2);
+            background: var(--p-color) !important;
+        }
+
+        /* Status Overrides for both Bubble and Card */
+        .timeline-v-item.status-completed,
+        .v-content.status-completed {
+            --p-color: #22c55e !important;
+        }
+
+        .timeline-v-item.status-inprogress,
+        .v-content.status-inprogress {
+            --p-color: #f59e0b !important;
+        }
+
+        .v-cards-stack {
+            display: flex;
+            flex-direction: row;
+            flex-wrap: wrap;
+            gap: 16px;
+            width: 100%;
+            align-items: flex-start;
+            padding-left: 20px;
+            /* Extra breathing room from the bubble */
+        }
+
+        .v-content {
+            background: white;
+            padding: 16px 20px;
+            border-radius: 12px;
+            flex: 1;
+            min-width: 280px;
+            max-width: 100%;
+            /* Flex row handles side-by-side naturally */
+            border-left: 4px solid var(--p-color);
+            box-shadow: var(--card-shadow);
+            transition: 0.3s;
+            position: relative;
+            z-index: 5;
+        }
+
+        .v-content:hover {
+            transform: translateX(8px);
+            box-shadow: 0 12px 20px -5px rgba(0, 0, 0, 0.1);
+        }
+
+        .v-content small {
+            display: block;
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--p-color);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 4px;
+        }
+
+        .v-content h4 {
+            font-size: 1rem;
+            margin-bottom: 4px;
+            color: var(--text-primary);
+        }
+
+        .v-content time {
+            font-size: 0.813rem;
+            color: var(--text-secondary);
+            font-weight: 600;
+            display: block;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <div>
+                <h1>Portfolio Roadmap</h1>
+                <p style="color: var(--text-dim)">Strategic Portfolio Management</p>
+            </div>
+            <div class="controls">
+                <button class="btn btn-primary" onclick="openAddProjectModal()">➕ Add Project</button>
+                <button class="btn" onclick="openBulkImportModal()">📋 Bulk Paste</button>
+                <div style="width: 1px; background: var(--border-subtle); margin: 0 8px;"></div>
+                <button class="btn" onclick="toggleView()">🔄 Switch View</button>
+                <button class="btn" onclick="exportRoadmap()">💾 Export JSON</button>
+                <button class="btn" onclick="importRoadmap()">📂 Restore</button>
+                <button class="btn btn-danger-outline" onclick="resetRoadmap()" title="Delete all projects">🗑️ Clear
+                    All</button>
+            </div>
+        </header>
+
+        <div id="timelineView" style="display: none;">
+            <header style="margin-bottom: 24px; border-bottom: 1px solid var(--border-light); padding-bottom: 16px;">
+                <h2 id="timelineTitle">Portfolio Timeline</h2>
+            </header>
+            <div id="timeline"></div>
+        </div>
+
+        <div id="cardView">
+            <div id="roadmap"></div>
+        </div>
+    </div>
+
+    <!-- Project Modal -->
+    <div id="projectModal" class="modal">
+        <div class="modal-content">
+            <h2 id="projectModalTitle">New Project</h2>
+            <form id="projectForm">
+                <input type="hidden" id="projectId">
+                <div class="form-group">
+                    <label>Project Name</label>
+                    <input type="text" id="projectName" required placeholder="e.g. Next-Gen Cloud Platform">
+                </div>
+                <div class="form-group">
+                    <label>Brand Accent Color</label>
+                    <input type="color" id="projectColor" value="#38bdf8" style="height: 50px; cursor: pointer;">
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn" onclick="closeProjectModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Project</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Phase Modal -->
+    <div id="phaseModal" class="modal">
+        <div class="modal-content">
+            <h2 id="phaseModalTitle">Manage Phase</h2>
+            <form id="phaseForm">
+                <input type="hidden" id="phaseId">
+                <input type="hidden" id="phaseProjectId">
+                <div class="form-group">
+                    <label>Phase Name</label>
+                    <input type="text" id="phaseName" required>
+                </div>
+                <div style="display: flex; gap: 15px;">
+                    <div class="form-group" style="flex: 1;">
+                        <label>Start Date</label>
+                        <input type="date" id="phaseStartDate" required>
+                    </div>
+                    <div class="form-group" style="flex: 1;">
+                        <label>End Date</label>
+                        <input type="date" id="phaseEndDate" required>
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn" onclick="closePhaseModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Phase</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Milestone Modal -->
+    <div id="milestoneModal" class="modal">
+        <div class="modal-content" style="width: 500px;">
+            <h2 id="milestoneModalTitle">Milestone Details</h2>
+            <form id="milestoneForm">
+                <input type="hidden" id="milestoneId">
+                <input type="hidden" id="milestoneProjectId">
+                <input type="hidden" id="milestonePhaseId">
+                <div class="form-group">
+                    <label>Title</label>
+                    <input type="text" id="milestoneTitle" required>
+                </div>
+                <div class="form-group">
+                    <label>Description (Optional)</label>
+                    <textarea id="milestoneDescription" rows="2"
+                        placeholder="Detail the expected outcome..."></textarea>
+                </div>
+                <div style="display: flex; gap: 15px;">
+                    <div class="form-group" style="flex: 1;">
+                        <label>Current Status</label>
+                        <select id="milestoneStatus">
+                            <option value="planned">Planned</option>
+                            <option value="in-progress">In-Progress</option>
+                            <option value="completed">Completed</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="flex: 1;">
+                        <label>Target Date</label>
+                        <input type="date" id="milestoneDate" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Tags (Comma separated)</label>
+                    <input type="text" id="milestoneTags" placeholder="e.g. cloud, api, frontend">
+                </div>
+                <div class="modal-actions">
+                    <button type="button" id="deleteMilestoneBtn" class="btn btn-danger-text"
+                        style="margin-right: auto; display: none;" onclick="deleteMilestoneFromModal()">Delete
+                        Milestone</button>
+                    <button type="button" class="btn" onclick="closeMilestoneModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Milestone</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Bulk Import Modal -->
+    <div id="bulkModal" class="modal">
+        <div class="modal-content" style="width: 800px; max-width: 90vw;">
+            <h2>Excel Bulk Import</h2>
+            <div style="display: flex; gap: 20px; align-items: flex-end; margin-bottom: 20px;">
+                <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                    <label>Filter Keywords (e.g. BSW+SW)</label>
+                    <input type="text" id="bulkFilter" placeholder="Optional: Only import matching names..."
+                        style="margin-bottom: 0;">
+                </div>
+                <div style="font-size: 0.75rem; color: var(--text-muted); max-width: 300px;">
+                    Enter keywords separated by '+' to filter rows. If empty, all rows are imported.
+                </div>
+            </div>
+            <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 20px;">
+                <b>Required Column Order:</b> <br>
+                <code># | Alert | Project | Phase Name | Ticket/Task | Key | Type | Assignee | Priority | Status | ...</code>
+            </p>
+            <textarea id="bulkPasteArea"
+                style="width: 100%; height: 350px; margin-bottom: 20px; font-family: monospace; font-size: 0.75rem; background: #f8fafc; border: 1px solid var(--border-subtle); border-radius: 12px; padding: 15px; resize: none;"
+                placeholder="Paste your copied Excel data here..."></textarea>
+
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <label
+                    style="display: flex; align-items: center; gap: 8px; font-size: 0.9rem; cursor: pointer; color: var(--text-secondary);">
+                    <input type="checkbox" id="clearOnImport" style="width: 16px; height: 16px; margin: 0;">
+                    Clear existing projects before import
+                </label>
+                <div class="modal-actions" style="margin-top: 0;">
+                    <button type="button" class="btn" onclick="closeBulkModal()">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="processBulkImport()">Import
+                        Portfolio</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <input type="file" id="importFile" accept=".json" style="display: none;" onchange="handleImport(event)">
+    <script src="roadmap.js"></script>
+</body>
+
+</html>
+</body>
+
+</html>
