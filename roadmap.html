@@ -64,20 +64,21 @@
         /* Controls */
         .controls {
             display: flex;
-            gap: 12px;
+            gap: 8px;
             background: var(--glass-bg);
-            padding: 6px;
+            padding: 4px;
             border-radius: 12px;
             border: 1px solid var(--border-subtle);
             backdrop-filter: blur(8px);
             box-shadow: var(--card-shadow);
+            width: fit-content;
         }
 
         .btn {
-            padding: 10px 20px;
+            padding: 8px 14px;
             border-radius: 8px;
             border: 1px solid transparent;
-            font-size: 0.875rem;
+            font-size: 0.813rem;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.2s;
@@ -937,26 +938,86 @@
             outline: none;
         }
 
-        .timeline-controls label {
-            font-size: 0.85rem;
-            font-weight: 600;
+        /* Dropdown View Selector Styles */
+        .view-dropdown {
+            position: relative;
+            display: inline-block;
+            padding-bottom: 8px; /* Buffer zone to avoid gap flicker */
+            margin-bottom: -8px; 
+        }
+
+        .dropdown-menu {
+            display: none;
+            position: absolute;
+            right: 0;
+            top: 100%;
+            background: white;
+            min-width: 220px;
+            padding: 8px;
+            border-radius: 12px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            border: 1px solid var(--border-light);
+            z-index: 1000;
+            animation: slideIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .view-dropdown:hover .dropdown-menu {
+            display: block;
+        }
+
+        .dropdown-item {
+            padding: 10px 16px;
+            border-radius: 8px;
             color: var(--text-secondary);
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .dropdown-item:hover {
+            background: #f1f5f9;
+            color: var(--text-primary);
+        }
+
+        .dropdown-item.active {
+            background: #f0f9ff;
+            color: #0ea5e9;
+            font-weight: 600;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
     </style>
 </head>
 
 <body>
     <div class="container">
-        <header>
-            <div>
+        <header style="margin-bottom: 24px; border-bottom: 1px solid var(--border-light); padding-bottom: 20px;">
+            <div style="margin-bottom: 20px;">
                 <h1>Portfolio Roadmap</h1>
-                <p style="color: var(--text-dim)">Strategic Portfolio Management</p>
+                <p style="color: var(--text-dim); font-size: 0.95rem;">Strategic Portfolio Management</p>
             </div>
+            
             <div class="controls">
                 <button class="btn btn-primary" onclick="openAddProjectModal()">➕ Add Project</button>
                 <button class="btn" onclick="openBulkImportModal()">📋 Bulk Paste</button>
-                <div style="width: 1px; background: var(--border-subtle); margin: 0 8px;"></div>
-                <button class="btn" onclick="toggleView()">🔄 Switch View</button>
+                <div style="width: 1px; background: var(--border-subtle); margin: 0 4px;"></div>
+                
+                <div class="view-dropdown">
+                    <button class="btn">🔄 Switch View ▾</button>
+                    <div class="dropdown-menu">
+                        <div id="item-gantt" class="dropdown-item" onclick="switchView('gantt')">📊 Portfolio Gantt</div>
+                        <div id="item-timeline" class="dropdown-item" onclick="switchView('timeline')">📅 Project Timeline</div>
+                        <div id="item-card" class="dropdown-item" onclick="switchView('card')">🃏 Card View</div>
+                    </div>
+                </div>
+
                 <button class="btn" onclick="exportRoadmap()">💾 Export JSON</button>
                 <button class="btn" onclick="importRoadmap()">📂 Restore</button>
                 <button class="btn btn-danger-outline" onclick="resetRoadmap()" title="Delete all projects">🗑️ Clear

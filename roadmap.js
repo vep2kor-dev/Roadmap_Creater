@@ -113,7 +113,18 @@ function renderRoadmap() {
             cardView.style.display = 'block';
             renderCardView();
     }
+
+    // Update active menu item UI
+    document.querySelectorAll('.dropdown-item').forEach(item => item.classList.remove('active'));
+    const activeItem = document.getElementById(`item-${currentView}`);
+    if (activeItem) activeItem.classList.add('active');
+
     saveToStorage();
+}
+
+function switchView(viewName) {
+    currentView = viewName;
+    renderRoadmap();
 }
 
 // ============================================
