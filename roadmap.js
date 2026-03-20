@@ -49,14 +49,32 @@ let roadmapData = {
 let currentView = 'gantt'; // default view
 let collapsedProjects = new Set(); // Track collapsed project IDs
 
+// Gantt View Settings
+let ganttSettings = {
+    viewType: 'full', // 'full', 'month', 'year'
+    selectedMonth: new Date().getMonth(),
+    selectedYear: new Date().getFullYear()
+};
+
 // ============================================
 // INITIALIZATION & MIGRATION
 // ============================================
 
 function initRoadmap() {
-    loadFromStorage();
-    migrateLegacyData();
-    renderRoadmap();
+    try {
+        loadFromStorage();
+        migrateLegacyData();
+        renderRoadmap();
+    } catch (e) {
+        console.error("Initialization failed:", e);
+        document.body.innerHTML = `
+            <div style="padding: 40px; text-align: center; color: #ef4444;">
+                <h2>⚠️ Roadmap Failed to Load</h2>
+                <p>${e.message}</p>
+                <button class="btn" style="margin: 20px auto;" onclick="resetRoadmap()">Reset Application</button>
+            </div>
+        `;
+    }
 }
 
 /**
@@ -81,45 +99,53 @@ function migrateLegacyData() {
 // ============================================
 
 function renderRoadmap() {
-    const cardView = document.getElementById('cardView');
-    const timelineView = document.getElementById('timelineView');
-    const timelineTitle = document.getElementById('timelineTitle');
+    try {
+        const cardView = document.getElementById('cardView');
+        const timelineView = document.getElementById('timelineView');
+        const timelineTitle = document.getElementById('timelineTitle');
 
-    // Clear and hide views initially
-    cardView.style.display = 'none';
-    timelineView.style.display = 'none';
-    
-    const controls = document.querySelector('.timeline-controls');
-    if (controls) controls.style.display = 'none';
+        if (!cardView || !timelineView) {
+            console.error("Critical UI containers missing");
+            return;
+        }
 
-    switch (currentView) {
-        case 'timeline':
-            timelineView.style.display = 'block';
-            timelineTitle.innerHTML = '<span>📊</span> Project Timeline';
-            if (controls) controls.style.display = 'flex';
-            renderTimelineView();
-            break;
-        case 'horizontal':
-            timelineView.style.display = 'block';
-            timelineTitle.innerHTML = '<span>📊</span> Stream View';
-            renderHorizontalTimeline();
-            break;
-        case 'gantt':
-            timelineView.style.display = 'block';
-            timelineTitle.innerHTML = '<span>📊</span> Portfolio Gantt';
-            renderGanttView();
-            break;
-        default:
-            cardView.style.display = 'block';
-            renderCardView();
+        // Hide UI initially
+        cardView.style.display = 'none';
+        timelineView.style.display = 'none';
+        
+        const timelineControls = document.querySelector('.timeline-controls');
+        const ganttControls = document.querySelector('.gantt-controls');
+        
+        if (timelineControls) timelineControls.style.display = 'none';
+        if (ganttControls) ganttControls.style.display = 'none';
+
+        switch (currentView) {
+            case 'timeline':
+                timelineView.style.display = 'block';
+                if (timelineTitle) timelineTitle.innerHTML = '<span>📅</span> Project Timeline';
+                if (timelineControls) timelineControls.style.display = 'flex';
+                renderTimelineView();
+                break;
+            case 'gantt':
+                timelineView.style.display = 'block';
+                if (timelineTitle) timelineTitle.innerHTML = '<span>📊</span> Portfolio Gantt';
+                if (ganttControls) ganttControls.style.display = 'flex';
+                renderGanttView();
+                break;
+            default:
+                cardView.style.display = 'block';
+                renderCardView();
+        }
+
+        // Update active menu item UI
+        document.querySelectorAll('.dropdown-item').forEach(item => item.classList.remove('active'));
+        const activeItem = document.getElementById(`item-${currentView}`);
+        if (activeItem) activeItem.classList.add('active');
+
+        saveToStorage();
+    } catch (e) {
+        console.error("Rendering failed:", e);
     }
-
-    // Update active menu item UI
-    document.querySelectorAll('.dropdown-item').forEach(item => item.classList.remove('active'));
-    const activeItem = document.getElementById(`item-${currentView}`);
-    if (activeItem) activeItem.classList.add('active');
-
-    saveToStorage();
 }
 
 function switchView(viewName) {
@@ -197,10 +223,45 @@ function renderMilestoneItem(projectId, phaseId, m) {
 }
 
 // ============================================
+// GANTT VIEW UTILITIES & SETTINGS
+// ============================================
+
+function updateGanttSettings(key, value) {
+    ganttSettings[key] = value;
+    renderRoadmap();
+}
+
+function syncGanttUI() {
+    const viewType = document.getElementById('ganttViewType');
+    const month = document.getElementById('ganttMonth');
+    const year = document.getElementById('ganttYear');
+    const monthGroup = document.getElementById('monthSelectorGroup');
+    const yearGroup = document.getElementById('yearSelectorGroup');
+
+    if (viewType) viewType.value = ganttSettings.viewType;
+    if (month) month.value = ganttSettings.selectedMonth;
+    
+    if (year && year.options.length === 0) {
+        const currentYear = new Date().getFullYear();
+        for (let y = currentYear - 2; y <= currentYear + 5; y++) {
+            const opt = document.createElement('option');
+            opt.value = y;
+            opt.textContent = y;
+            year.appendChild(opt);
+        }
+    }
+    if (year) year.value = ganttSettings.selectedYear;
+
+    if (monthGroup) monthGroup.style.display = ganttSettings.viewType === 'month' ? 'block' : 'none';
+    if (yearGroup) yearGroup.style.display = (ganttSettings.viewType === 'month' || ganttSettings.viewType === 'year') ? 'block' : 'none';
+}
+
+// ============================================
 // GANTT VIEW RENDERING (HIEARCHICAL)
 // ============================================
 
 function renderGanttView() {
+    syncGanttUI();
     const container = document.getElementById('timeline');
     if (roadmapData.projects.length === 0) {
         container.innerHTML = renderEmptyState("Gantt view unavailable", "Create projects and phases first");
@@ -208,47 +269,83 @@ function renderGanttView() {
     }
 
     const today = new Date();
-    // Date Bounds Calculation
-    let allDates = [today];
-    roadmapData.projects.forEach(p => p.phases.forEach(ph => {
-        allDates.push(parseLocalDate(ph.startDate), parseLocalDate(ph.endDate));
-        ph.milestones.forEach(m => allDates.push(parseLocalDate(m.targetDate)));
-    }));
-    const minDate = allDates.length ? new Date(Math.min(...allDates.filter(Boolean))) : new Date(today.getFullYear(), 0, 1);
-    const maxDate = allDates.length ? new Date(Math.max(...allDates.filter(Boolean))) : new Date(today.getFullYear() + 1, 11, 31);
+    let minDate, maxDate;
 
-    // Padding
-    minDate.setDate(1);
-    maxDate.setMonth(maxDate.getMonth() + 1);
-    maxDate.setDate(0);
+    if (ganttSettings.viewType === 'month') {
+        minDate = new Date(ganttSettings.selectedYear, ganttSettings.selectedMonth, 1);
+        maxDate = new Date(ganttSettings.selectedYear, ganttSettings.selectedMonth + 1, 1); // Start of next month
+    } else if (ganttSettings.viewType === 'year') {
+        minDate = new Date(ganttSettings.selectedYear, 0, 1);
+        maxDate = new Date(ganttSettings.selectedYear + 1, 0, 1); // Start of next year
+    } else {
+        // Date Bounds Calculation (Full View)
+        let allDates = [today];
+        roadmapData.projects.forEach(p => p.phases.forEach(ph => {
+            allDates.push(parseLocalDate(ph.startDate), parseLocalDate(ph.endDate));
+            ph.milestones.forEach(m => allDates.push(parseLocalDate(m.targetDate)));
+        }));
+        minDate = allDates.length ? new Date(Math.min(...allDates.filter(Boolean))) : new Date(today.getFullYear(), 0, 1);
+        maxDate = allDates.length ? new Date(Math.max(...allDates.filter(Boolean))) : new Date(today.getFullYear() + 1, 11, 31);
+
+        // Padding to full months
+        minDate.setDate(1);
+        maxDate.setMonth(maxDate.getMonth() + 1);
+        maxDate.setDate(1); // Start of next month for better range math
+    }
 
     const minTime = minDate.getTime();
-    const totalMs = maxDate.getTime() - minTime;
-    const totalDays = totalMs / (1000 * 60 * 60 * 24);
+    const maxTime = maxDate.getTime();
+    const totalMs = Math.max(maxTime - minTime, 86400000); // at least 1 day
 
-    const getPos = (dateStr) => {
-        const d = parseLocalDate(dateStr);
-        return d ? ((d.getTime() - minTime) / totalMs) * 100 : 0;
+    const getPos = (dateOrStr) => {
+        const d = (typeof dateOrStr === 'string') ? parseLocalDate(dateOrStr) : dateOrStr;
+        if (!d) return 0;
+        const pos = ((d.getTime() - minTime) / totalMs) * 100;
+        return Math.max(0, Math.min(100, pos)); // Clamp to 0-100%
     };
 
-    // Generate Months
-    let monthsHtml = '';
-    let curr = new Date(minDate);
-    while (curr <= maxDate) {
-        const mStart = new Date(curr.getFullYear(), curr.getMonth(), 1);
-        const mEnd = new Date(curr.getFullYear(), curr.getMonth() + 1, 0);
-        const width = ((mEnd.getTime() - mStart.getTime() + 86400000) / totalMs) * 100;
-        monthsHtml += `<div class="gantt-month" style="left: ${getPos(mStart.toISOString().split('T')[0])}%; width: ${width}%">
-            ${mStart.toLocaleDateString('en-US', { month: 'short', year: '2-digit' })}
-        </div>`;
-        curr.setMonth(curr.getMonth() + 1);
+    const isVisible = (start, end) => {
+        const s = parseLocalDate(start).getTime();
+        const e = parseLocalDate(end).getTime();
+        return (s <= maxTime && e >= minTime);
+    };
+
+    // Generate Header (Months or Days)
+    let headerHtml = '';
+    if (ganttSettings.viewType === 'month') {
+        let currDay = 1;
+        while (currDay <= 31) {
+            const dayDate = new Date(ganttSettings.selectedYear, ganttSettings.selectedMonth, currDay);
+            // Verify date is still in the same month (for months with < 31 days)
+            if (dayDate.getMonth() !== ganttSettings.selectedMonth) break;
+
+            const width = (86400000 / totalMs) * 100;
+            headerHtml += `<div class="gantt-month gantt-day-header" style="left: ${getPos(dayDate)}%; width: ${width}%;">
+                ${currDay}
+            </div>`;
+            currDay++;
+        }
+    } else {
+        let currHeader = new Date(minDate);
+        while (currHeader < maxDate) {
+            const mStart = new Date(currHeader.getFullYear(), currHeader.getMonth(), 1);
+            const mEnd = new Date(currHeader.getFullYear(), currHeader.getMonth() + 1, 1);
+            const width = ((mEnd.getTime() - mStart.getTime()) / totalMs) * 100;
+            headerHtml += `<div class="gantt-month" style="left: ${getPos(mStart)}%; width: ${width}%">
+                ${mStart.toLocaleDateString('en-US', { month: 'short', year: '2-digit' })}
+            </div>`;
+            currHeader.setMonth(currHeader.getMonth() + 1);
+        }
     }
 
     // Today indicator specifically for the header
-    const todayPos = getPos(today.toISOString().split('T')[0]);
-    monthsHtml += `<div class="gantt-today-pin" style="left: ${todayPos}%">
-        <span>TODAY</span>
-    </div>`;
+    const todayMs = today.getTime();
+    if (todayMs >= minTime && todayMs <= maxTime) {
+        const todayPos = getPos(today);
+        headerHtml += `<div class="gantt-today-pin" style="left: ${todayPos}%">
+            <span>TODAY</span>
+        </div>`;
+    }
 
     // Build Rows
     let bodyHtml = '';
@@ -256,6 +353,12 @@ function renderGanttView() {
     roadmapData.projects.forEach(project => {
         const isCollapsed = collapsedProjects.has(project.id);
         
+        // Filter phases for visibility in current view range
+        const visiblePhases = project.phases.filter(ph => isVisible(ph.startDate, ph.endDate));
+        
+        // If view is not full, and there are no visible phases in this project, skip it
+        if (ganttSettings.viewType !== 'full' && visiblePhases.length === 0) return;
+
         // Project Header Row
         bodyHtml += `
             <div class="gantt-row gantt-project-row" style="--project-color: ${project.color}">
@@ -270,9 +373,12 @@ function renderGanttView() {
         `;
 
         if (!isCollapsed) {
-            project.phases.forEach(phase => {
-                const pL = getPos(phase.startDate);
-                const pW = Math.max(getPos(phase.endDate) - pL, 0.5);
+            visiblePhases.forEach(phase => {
+                const sTime = Math.max(parseLocalDate(phase.startDate).getTime(), minTime);
+                const eTime = Math.min(parseLocalDate(phase.endDate).getTime(), maxDate.getTime());
+                
+                const pL = ((sTime - minTime) / totalMs) * 100;
+                const pW = Math.max(((eTime - sTime) / totalMs) * 100, 0.5);
 
                 bodyHtml += `
                     <div class="gantt-row" style="--project-color: ${project.color}">
@@ -284,7 +390,10 @@ function renderGanttView() {
                             <div class="gantt-phase-bar" style="left: ${pL}%; width: ${pW}%" onclick="editPhase('${project.id}', ${phase.id})">
                                  <span class="gantt-phase-label">${escapeHtml(phase.name)}</span>
                             </div>
-                            ${phase.milestones.map(m => {
+                            ${phase.milestones.filter(m => {
+                                const mTime = parseLocalDate(m.targetDate).getTime();
+                                return mTime >= minTime && mTime <= maxDate.getTime();
+                            }).map(m => {
                     const mL = getPos(m.targetDate);
                     const color = m.status === 'completed' ? '#00ff88' : m.status === 'in-progress' ? '#00d9ff' : '#ffc107';
                     return `<div class="gantt-milestone-marker" style="left: ${mL}%; background: ${color}" 
@@ -307,7 +416,7 @@ function renderGanttView() {
         <div class="gantt-container">
             <div class="gantt-header">
                 <div class="gantt-label-header">Projects & Phases</div>
-                <div class="gantt-months">${monthsHtml}</div>
+                <div class="gantt-months">${headerHtml}</div>
             </div>
             <div class="gantt-body">${bodyHtml}</div>
         </div>
