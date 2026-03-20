@@ -820,27 +820,76 @@
             padding-top: 16px;
         }
 
-        /* The Bubble (Node) - Top Layer */
-        .timeline-v-item::after {
-            content: '';
-            position: absolute;
-            left: 24px;
-            top: 50%;
-            transform: translateY(-50%);
-            width: 16px;
-            height: 16px;
-            background: white !important;
-            border: 3px solid var(--p-color);
-            border-radius: 50%;
-            z-index: 10;
-            /* Highest layer in the row */
-            box-shadow: 0 0 0 4px white, var(--card-shadow);
-            transition: 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        /* Collapsed State */
+        .timeline-v-item.is-collapsed {
+            padding-top: 10px;
+            padding-bottom: 10px;
+            min-height: 60px;
         }
 
-        .timeline-v-item:hover::after {
-            transform: translateY(-50%) scale(1.2);
-            background: var(--p-color) !important;
+        .timeline-v-item.is-collapsed .v-cards-stack {
+            display: none;
+        }
+
+        .v-bubble {
+            position: absolute;
+            left: 11px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 42px;
+            height: 42px;
+            background: white;
+            border: 2.5px solid var(--p-color);
+            border-radius: 50%;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.65rem;
+            font-weight: 800;
+            color: var(--text-primary);
+            box-shadow: 0 0 0 4px white, var(--card-shadow);
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            line-height: 1;
+        }
+
+        .v-bubble .v-day {
+            font-size: 0.85rem;
+            margin-bottom: 2px;
+            color: var(--p-color);
+        }
+
+        .v-bubble .v-month {
+            text-transform: uppercase;
+            font-size: 0.55rem;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+        }
+
+        .timeline-v-item:hover .v-bubble {
+            transform: translateY(-50%) scale(1.1);
+            box-shadow: 0 0 0 6px white, 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Month Group Dividers */
+        .timeline-month-header {
+            margin: 40px 0 24px 90px;
+            font-size: 0.813rem;
+            font-weight: 900;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .timeline-month-header::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: linear-gradient(to right, var(--border-subtle), transparent);
         }
 
         /* Status Overrides for both Bubble and Card */
@@ -1018,6 +1067,41 @@
             font-weight: 600;
         }
 
+        .team-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: #f1f5f9;
+            border: 1px solid #e2e8f0;
+            padding: 4px 12px;
+            border-radius: 999px;
+            font-size: 0.813rem;
+            color: #475569;
+            font-weight: 600;
+            transition: 0.2s;
+        }
+
+        .team-chip:hover {
+            background: #e2e8f0;
+            border-color: #cbd5e1;
+        }
+
+        .team-chip button {
+            background: none;
+            border: none;
+            color: #94a3b8;
+            cursor: pointer;
+            padding: 0;
+            line-height: 1;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+        }
+
+        .team-chip button:hover {
+            color: #ef4444;
+        }
+
         @keyframes slideIn {
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
@@ -1035,6 +1119,7 @@
             
             <div class="controls">
                 <button class="btn btn-primary" onclick="openAddProjectModal()">➕ Add Project</button>
+                <button class="btn" onclick="openTeamModal()">👥 Manage Team</button>
                 <button class="btn" onclick="openBulkImportModal()">📋 Bulk Paste</button>
                 <div style="width: 1px; background: var(--border-subtle); margin: 0 4px;"></div>
                 
@@ -1069,6 +1154,14 @@
                         <select id="phaseFilter" onchange="updateTimelineFilters()">
                             <option value="all">All Phases</option>
                         </select>
+                    </div>
+                    <div class="filter-group">
+                        <button class="btn btn-sm" onclick="toggleTimelineAll()" id="timelineGlobalToggle" title="Show/Hide card details">
+                            ↔️ Toggle Cards
+                        </button>
+                        <button class="btn btn-sm" onclick="toggleTimelineAllMonths()" id="timelineMonthGlobalToggle" title="Show/Hide entire months">
+                            📅 Toggle Months
+                        </button>
                     </div>
                 </div>
 
@@ -1229,6 +1322,14 @@
                 <b>Required Column Order:</b> <br>
                 <code># | Alert | Project | Phase Name | Ticket/Task | Key | Type | Assignee | Priority | Status | ...</code>
             </p>
+
+            <div style="margin-bottom: 20px; padding: 15px; background: #f8fafc; border: 1px solid var(--border-subtle); border-radius: 12px; display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <label style="display: block; font-weight: 700; font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 4px;">👥 Filtering by Team Registry</label>
+                    <p style="font-size: 0.75rem; color: var(--text-muted); margin: 0;">Only tasks for members in your registry will be imported.</p>
+                </div>
+                <button type="button" class="btn-sm" onclick="openTeamModal()">Edit Registry</button>
+            </div>
             <textarea id="bulkPasteArea"
                 style="width: 100%; height: 350px; margin-bottom: 20px; font-family: monospace; font-size: 0.75rem; background: #f8fafc; border: 1px solid var(--border-subtle); border-radius: 12px; padding: 15px; resize: none;"
                 placeholder="Paste your copied Excel data here..."></textarea>
@@ -1248,7 +1349,61 @@
         </div>
     </div>
 
+    <!-- Team Modal -->
+    <div id="teamModal" class="modal">
+        <div class="modal-content" style="width: 550px; max-height: 90vh;">
+            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 24px;">
+                <div>
+                    <h2 style="margin: 0;">👥 Team Registry</h2>
+                    <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">Define members to filter bulk imports</p>
+                </div>
+                <button type="button" class="btn-sm" onclick="closeTeamModal()">Close</button>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 16px;">
+                <label>➕ Quick Add</label>
+                <div style="display: flex; gap: 8px;">
+                    <input type="text" id="addTeamMember" placeholder="Enter name..." onkeydown="if(event.key==='Enter') addIndividualMember()">
+                    <button class="btn btn-primary btn-sm" onclick="addIndividualMember()">Add</button>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Current Team Members</label>
+                <div id="teamChipsContainer" style="max-height: 180px; overflow-y: auto; padding: 16px; border: 1px dashed #cbd5e1; border-radius: 12px; background: #f8fafc; display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 24px; align-content: flex-start;">
+                    <!-- Chips go here -->
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>💡 Bulk Sync (Advanced)</label>
+                <p style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 8px;">Edit or paste your entire list here for rapid updates.</p>
+                <textarea id="fullTeamRegistry" 
+                    style="width: 100%; height: 120px; font-family: monospace; font-size: 0.8rem; background: #fff; border: 1px solid var(--border-subtle); border-radius: 12px; padding: 12px; resize: vertical;"
+                    placeholder="e.g.&#10;John Smith&#10;Jane Doe"
+                    oninput="syncChipsFromText()"></textarea>
+            </div>
+
+            <div class="modal-actions">
+                <button type="button" class="btn btn-primary" style="width: 100%; justify-content: center;" onclick="saveFullTeamRegistry()">Save & Apply Registry</button>
+            </div>
+        </div>
+    </div>
+
     <input type="file" id="importFile" accept=".json" style="display: none;" onchange="handleImport(event)">
+    <!-- Detail Modal for Grouped Milestones -->
+    <div id="detailModal" class="modal">
+        <div class="modal-content" style="width: 550px; max-height: 80vh; overflow-y: auto;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+                <h2 id="detailModalTitle" style="margin: 0;">📅 Items for Date</h2>
+                <button type="button" class="btn" onclick="closeDetailModal()">Close</button>
+            </div>
+            <div id="detailModalBody" style="display: flex; flex-direction: column; gap: 16px;">
+                <!-- Populated by JS -->
+            </div>
+        </div>
+    </div>
+
     <script src="roadmap.js"></script>
 </body>
 

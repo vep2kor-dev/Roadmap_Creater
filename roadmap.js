@@ -49,6 +49,12 @@ let roadmapData = {
 let currentView = 'gantt'; // default view
 let collapsedProjects = new Set(); // Track collapsed project IDs
 
+// Timeline View Settings
+let isTimelineAllCollapsed = false;
+let overriddenTimelineDates = new Set();
+let isTimelineAllMonthsCollapsed = false;
+let collapsedTimelineMonths = new Set();
+
 // Gantt View Settings
 let ganttSettings = {
     viewType: 'full', // 'full', 'month', 'year'
@@ -92,6 +98,7 @@ function migrateLegacyData() {
         saveToStorage();
     }
     if (!roadmapData.projects) roadmapData.projects = [];
+    if (!roadmapData.allowedAuthors) roadmapData.allowedAuthors = [];
 }
 
 // ============================================
@@ -390,21 +397,46 @@ function renderGanttView() {
                             <div class="gantt-phase-bar" style="left: ${pL}%; width: ${pW}%" onclick="editPhase('${project.id}', ${phase.id})">
                                  <span class="gantt-phase-label">${escapeHtml(phase.name)}</span>
                             </div>
-                            ${phase.milestones.filter(m => {
-                                const mTime = parseLocalDate(m.targetDate).getTime();
-                                return mTime >= minTime && mTime <= maxDate.getTime();
-                            }).map(m => {
-                    const mL = getPos(m.targetDate);
-                    const color = m.status === 'completed' ? '#00ff88' : m.status === 'in-progress' ? '#00d9ff' : '#ffc107';
-                    return `<div class="gantt-milestone-marker" style="left: ${mL}%; background: ${color}" 
-                                             onclick="event.stopPropagation(); editMilestone('${project.id}', ${phase.id}, ${m.id})">
-                                    <span class="gantt-tooltip">
-                                        <strong>${escapeHtml(m.title)}</strong>
-                                        ${m.description ? `<br><span class="tooltip-desc">${escapeHtml(m.description)}</span>` : ''}
-                                        <br><small>${formatDate(m.targetDate)}</small>
-                                    </span>
-                                </div>`;
-                }).join('')}
+                            ${(() => {
+                                // Group milestones by day to avoid overlapping markers
+                                const groups = {};
+                                phase.milestones.forEach(m => {
+                                    const mTime = parseLocalDate(m.targetDate).getTime();
+                                    if (mTime >= minTime && mTime <= maxTime) {
+                                        if (!groups[m.targetDate]) groups[m.targetDate] = [];
+                                        groups[m.targetDate].push(m);
+                                    }
+                                });
+
+                                return Object.values(groups).map(ms => {
+                                    const first = ms[0];
+                                    const mL = getPos(first.targetDate);
+                                    
+                                    // Determine combined color indicator
+                                    let status = 'planned';
+                                    if (ms.some(m => m.status === 'in-progress')) status = 'in-progress';
+                                    else if (ms.every(m => m.status === 'completed')) status = 'completed';
+                                    const color = status === 'completed' ? '#00ff88' : status === 'in-progress' ? '#00d9ff' : '#ffc107';
+                                    
+                                    const tooltipDetail = ms.map(m => `
+                                        <div style="margin-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 4px;">
+                                            <strong>${escapeHtml(m.title)}</strong>
+                                            ${m.description ? `<br><small class="tooltip-desc">${escapeHtml(m.description)}</small>` : ''}
+                                        </div>
+                                    `).join('');
+
+                                    return `<div class="gantt-milestone-marker" style="left: ${mL}%; background: ${color}" 
+                                                         onclick="event.stopPropagation(); ${ms.length === 1 
+                                                            ? `editMilestone('${project.id}', ${phase.id}, ${first.id})` 
+                                                            : `showMilestonesDetail('${project.id}', ${phase.id}, '${first.targetDate}')`}">
+                                                <span class="gantt-tooltip">
+                                                    ${ms.length > 1 ? `<div style="color: #0ea5e9; font-weight: 800; margin-bottom: 8px;">View Details (${ms.length})</div>` : ''}
+                                                    ${tooltipDetail}
+                                                    <small style="opacity: 0.7;">${formatDate(first.targetDate)}</small>
+                                                </span>
+                                            </div>`;
+                                }).join('');
+                            })()}
                         </div>
                     </div>
                 `;
@@ -487,41 +519,105 @@ function renderTimelineView() {
         return;
     }
 
+     // Final month-wise grouping
+    const monthGroups = {};
+    sortedDates.forEach(date => {
+        const d = parseLocalDate(date);
+        const mKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+        if (!monthGroups[mKey]) monthGroups[mKey] = [];
+        monthGroups[mKey].push(date);
+    });
+
+    const sortedMonthKeys = Object.keys(monthGroups).sort();
+
     container.innerHTML = `
-        <div class="timeline-v-scroll">
-            ${sortedDates.map((date) => {
-                const ms = grouped[date];
+        <div class="timeline-v-scroll" style="padding-bottom: 80px;">
+            ${sortedMonthKeys.map(mKey => {
+                const [year, month] = mKey.split('-');
+                const d = new Date(year, month - 1, 1);
+                const monthName = d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
                 
-                // Aggregated status logic for the bubble:
-                // 1. If ALL milestones are completed, the bubble is green.
-                // 2. If ANY milestone is in-progress, the bubble is orange.
-                // 3. Otherwise, use default project color.
-                let status = '';
-                if (ms.every(m => m.status === 'completed')) {
-                    status = 'completed';
-                } else if (ms.some(m => m.status === 'in-progress')) {
-                    status = 'inprogress';
-                }
-                
-                const rowStatusClass = status ? `status-${status}` : '';
-                const first = ms[0];
-                
+                // Determine monthly collapse state
+                let isMonthCollapsed = isTimelineAllMonthsCollapsed;
+                if (collapsedTimelineMonths.has(mKey)) isMonthCollapsed = !isMonthCollapsed;
+
                 return `
-                <div class="timeline-v-item ${rowStatusClass}" style="--p-color: ${first.projectColor}">
-                    <div class="v-cards-stack">
-                        ${ms.map(m => `
-                            <div class="v-content status-${m.status.replace('-', '')}" style="--p-color: ${m.projectColor}">
-                                <small>${escapeHtml(m.projectName)}</small>
-                                <h4>${escapeHtml(m.title)}</h4>
-                                <p>${escapeHtml(m.description || '')}</p>
-                                <time>${formatDate(m.targetDate)}</time>
-                            </div>
-                        `).join('')}
+                    <div class="timeline-month-header" onclick="toggleTimelineMonth('${mKey}')" style="cursor: pointer;">
+                        <span class="gantt-toggle-arrow" style="margin-right: 12px; font-size: 0.7rem; color: #94a3b8; transition: transform 0.2s; display: inline-block; transform: ${isMonthCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)'}">▼</span>
+                        ${monthName}
                     </div>
-                </div>
-            `;}).join('')}
+                    ${isMonthCollapsed ? '' : monthGroups[mKey].map(date => {
+                        const ms = grouped[date];
+                        
+                        // Aggregated status logic
+                        let status = '';
+                        if (ms.every(m => m.status === 'completed')) status = 'completed';
+                        else if (ms.some(m => m.status === 'in-progress')) status = 'inprogress';
+                        
+                        // Determine collapse state
+                        let isCollapsed = isTimelineAllCollapsed;
+                        if (overriddenTimelineDates.has(date)) isCollapsed = !isCollapsed;
+
+                        const rowStatusClass = status ? `status-${status}` : '';
+                        const collapseClass = isCollapsed ? 'is-collapsed' : '';
+                        const first = ms[0];
+
+                        return `
+                        <div class="timeline-v-item ${rowStatusClass} ${collapseClass}" style="--p-color: ${first.projectColor}" onclick="event.stopPropagation(); toggleTimelineDate('${date}')">
+                            <div class="v-bubble" title="Click to ${isCollapsed ? 'Expand' : 'Collapse'}">
+                                ${(() => {
+                                    const dObj = parseLocalDate(date);
+                                    return `<span class="v-day">${dObj.getDate()}</span><span class="v-month">${dObj.toLocaleDateString('en-US', { month: 'short' })}</span>`;
+                                })()}
+                            </div>
+                            <div class="v-cards-stack">
+                                ${ms.map(m => `
+                                    <div class="v-content status-${m.status.replace('-', '')}" style="--p-color: ${m.projectColor}">
+                                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 4px;">
+                                            <small style="color: var(--p-color); font-weight: 700;">${escapeHtml(m.projectName)}</small>
+                                            <span class="badge-${m.status.replace('-', '')}" style="font-size: 0.65rem;">${m.status.toUpperCase()}</span>
+                                        </div>
+                                        <h4>${escapeHtml(m.title)}</h4>
+                                        <p>${escapeHtml(m.description || '')}</p>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>`;
+                    }).join('')}
+                `;
+            }).join('')}
         </div>
     `;
+}
+
+function toggleTimelineMonth(mKey) {
+    if (collapsedTimelineMonths.has(mKey)) {
+        collapsedTimelineMonths.delete(mKey);
+    } else {
+        collapsedTimelineMonths.add(mKey);
+    }
+    renderTimelineView();
+}
+
+function toggleTimelineAllMonths() {
+    isTimelineAllMonthsCollapsed = !isTimelineAllMonthsCollapsed;
+    collapsedTimelineMonths.clear();
+    renderTimelineView();
+}
+
+function toggleTimelineAll() {
+    isTimelineAllCollapsed = !isTimelineAllCollapsed;
+    overriddenTimelineDates.clear(); // Reset overrides when global toggle used
+    renderTimelineView();
+}
+
+function toggleTimelineDate(date) {
+    if (overriddenTimelineDates.has(date)) {
+        overriddenTimelineDates.delete(date);
+    } else {
+        overriddenTimelineDates.add(date);
+    }
+    renderTimelineView();
 }
 
 function updateTimelineFilters() {
@@ -772,6 +868,68 @@ function openBulkImportModal() {
     document.getElementById('bulkModal').classList.add('active');
 }
 
+function openTeamModal() {
+    const list = roadmapData.allowedAuthors || [];
+    document.getElementById('fullTeamRegistry').value = list.join('\n');
+    renderTeamChips();
+    document.getElementById('teamModal').classList.add('active');
+}
+
+function renderTeamChips() {
+    const list = roadmapData.allowedAuthors || [];
+    const container = document.getElementById('teamChipsContainer');
+    if (!container) return;
+
+    if (list.length === 0) {
+        container.innerHTML = '<p style="color: #94a3b8; font-size: 0.8rem; margin: auto;">No members added yet.</p>';
+        return;
+    }
+
+    container.innerHTML = list.map(name => `
+        <div class="team-chip">
+            <span>${escapeHtml(name || "(Blank)")}</span>
+            <button onclick="removeTeamMember('${name.replace(/'/g, "\\'")}')" title="Remove">×</button>
+        </div>
+    `).join('');
+}
+
+function addIndividualMember() {
+    const input = document.getElementById('addTeamMember');
+    const name = input.value.trim();
+    if (name) {
+        if (!roadmapData.allowedAuthors) roadmapData.allowedAuthors = [];
+        if (!roadmapData.allowedAuthors.includes(name)) {
+            roadmapData.allowedAuthors.push(name);
+            document.getElementById('fullTeamRegistry').value = roadmapData.allowedAuthors.join('\n');
+            renderTeamChips();
+        }
+    }
+    input.value = '';
+    input.focus();
+}
+
+function removeTeamMember(name) {
+    roadmapData.allowedAuthors = roadmapData.allowedAuthors.filter(n => n !== name);
+    document.getElementById('fullTeamRegistry').value = roadmapData.allowedAuthors.join('\n');
+    renderTeamChips();
+}
+
+function syncChipsFromText() {
+    const raw = document.getElementById('fullTeamRegistry').value;
+    roadmapData.allowedAuthors = raw.split('\n').map(s => s.trim());
+    renderTeamChips();
+}
+
+function saveFullTeamRegistry() {
+    syncChipsFromText(); // Final sync
+    saveToStorage();
+    closeTeamModal();
+}
+
+function closeTeamModal() {
+    document.getElementById('teamModal').classList.remove('active');
+}
+
 function closeBulkModal() {
     document.getElementById('bulkModal').classList.remove('active');
 }
@@ -780,6 +938,9 @@ function processBulkImport() {
     const rawData = document.getElementById('bulkPasteArea').value; // Don't trim yet, we need leading spaces
     const filterInput = document.getElementById('bulkFilter').value.trim().toLowerCase();
     const filterKeywords = filterInput ? filterInput.split('+').map(k => k.trim()) : [];
+    
+    // Normalize team registry for faster lookup
+    const approvedTeam = new Set((roadmapData.allowedAuthors || []).map(a => a.toLowerCase()));
 
     if (!rawData) return;
 
@@ -828,6 +989,15 @@ function processBulkImport() {
         if (filterKeywords.length > 0 && inferredType === 'task') {
             const matches = filterKeywords.some(k => name.toLowerCase().includes(k));
             if (!matches) return;
+        }
+
+        // --- TEAM REGISTRY FILTER ---
+        // Only apply if the team registry has entries
+        if (approvedTeam.size > 0 && inferredType === 'task') {
+            const assignee = (cols[5] || "").trim().toLowerCase();
+            // User mentioned they also keep "Blank" (unassigned) tasks sometimes.
+            // If they want specifically ONLY the team, we check for match.
+            if (!approvedTeam.has(assignee)) return;
         }
 
         // --- HIERARCHY MAPPING ---
@@ -968,16 +1138,50 @@ function loadFromStorage() {
     if (data) roadmapData = JSON.parse(data);
 }
 
+function closeDetailModal() {
+    document.getElementById('detailModal').classList.remove('active');
+}
+
+function showMilestonesDetail(projectId, phaseId, dateStr) {
+    const p = roadmapData.projects.find(p => p.id === projectId);
+    const ph = p?.phases.find(ph => ph.id === phaseId);
+    if (!ph) return;
+
+    const msOnDate = ph.milestones.filter(m => m.targetDate === dateStr);
+    const title = document.getElementById('detailModalTitle');
+    const body = document.getElementById('detailModalBody');
+
+    if (title) title.textContent = `📅 Items for ${formatDate(dateStr)}`;
+    if (body) {
+        body.innerHTML = msOnDate.map(m => {
+            const statusColor = m.status === 'completed' ? '#10b981' : m.status === 'in-progress' ? '#0ea5e9' : '#f59e0b';
+            return `
+                <div class="milestone-item" onclick="editMilestone('${projectId}', ${phaseId}, ${m.id}); closeDetailModal()" style="border-left: 4px solid ${statusColor}; background: #f8fafc; padding: 16px; border-radius: 12px; transition: 0.2s; cursor: pointer;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                        <strong style="color: var(--text-primary); font-size: 1rem;">${escapeHtml(m.title)}</strong>
+                        <span class="badge-${m.status.replace('-', '')}" style="font-size: 0.65rem;">${m.status.toUpperCase()}</span>
+                    </div>
+                    ${m.description ? `<p style="font-size: 0.813rem; color: var(--text-secondary); margin: 0;">${escapeHtml(m.description)}</p>` : ''}
+                </div>
+            `;
+        }).join('');
+    }
+
+    document.getElementById('detailModal').classList.add('active');
+}
+
 // UI Handlers
 function closeProjectModal() { document.getElementById('projectModal').classList.remove('active'); }
 function closePhaseModal() { document.getElementById('phaseModal').classList.remove('active'); }
 function closeMilestoneModal() { document.getElementById('milestoneModal').classList.remove('active'); }
 
 // Handle closing by clicking outside
-[document.getElementById('projectModal'), document.getElementById('phaseModal'), document.getElementById('milestoneModal')].forEach(modal => {
-    modal.addEventListener('click', function (e) {
-        if (e.target === this) this.classList.remove('active');
-    });
+[document.getElementById('projectModal'), document.getElementById('phaseModal'), document.getElementById('milestoneModal'), document.getElementById('teamModal'), document.getElementById('bulkModal'), document.getElementById('detailModal')].forEach(modal => {
+    if (modal) {
+        modal.addEventListener('click', function (e) {
+            if (e.target === this) this.classList.remove('active');
+        });
+    }
 });
 
 // Handle Escape key
@@ -986,6 +1190,9 @@ document.addEventListener('keydown', function (e) {
         closeProjectModal();
         closePhaseModal();
         closeMilestoneModal();
+        closeTeamModal();
+        closeBulkModal();
+        closeDetailModal();
     }
 });
 
